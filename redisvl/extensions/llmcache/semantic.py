@@ -22,6 +22,7 @@ class SemanticCache(BaseLLMCache):
     updated_at_field_name: str = "updated_at"
     tag_field_name: str = "scope_tag"
     response_field_name: str = "response"
+    hit_count_field_name: str = "hit_count"
     metadata_field_name: str = "metadata"
 
     def __init__(
@@ -84,6 +85,7 @@ class SemanticCache(BaseLLMCache):
                 {"name": self.response_field_name, "type": "text"},
                 {"name": self.inserted_at_field_name, "type": "numeric"},
                 {"name": self.updated_at_field_name, "type": "numeric"},
+                {"name": self.hit_count_field_name, "type": "numeric"},
                 {"name": self.tag_field_name, "type": "tag"},
                 {
                     "name": self.vector_field_name,
@@ -114,6 +116,7 @@ class SemanticCache(BaseLLMCache):
             self.response_field_name,
             self.tag_field_name,
             self.vector_field_name,
+            self.hit_count_field_name,
             self.metadata_field_name,
         ]
         self.set_vectorizer(vectorizer)
@@ -323,6 +326,11 @@ class SemanticCache(BaseLLMCache):
 
         # Check for cache hits by searching the cache
         cache_hits = self._search_cache(vector, num_results, return_fields, tags)
+        for hit in cache_hits:
+            #self.update(hit[self.entry_id_field_name], **{self.hit_count_field_name: int(hit[self.hit_count_field_name])+1})
+            
+            self.update(key = hit[self.entry_id_field_name], hit_count = int(hit[self.hit_count_field_name])+1)
+            #TODO move to pipeline for performance
         return cache_hits
 
     def store(
@@ -376,6 +384,7 @@ class SemanticCache(BaseLLMCache):
             self.vector_field_name: array_to_buffer(vector),
             self.inserted_at_field_name: now,
             self.updated_at_field_name: now,
+            self.hit_count_field_name: 0,
         }
         if metadata is not None:
             if not isinstance(metadata, dict):
@@ -416,6 +425,7 @@ class SemanticCache(BaseLLMCache):
                 self.vector_field_name,
                 self.response_field_name,
                 self.tag_field_name,
+                self.hit_count_field_name,
                 self.metadata_field_name,
             }:
                 raise ValueError(f" {key} is not a valid field within document")

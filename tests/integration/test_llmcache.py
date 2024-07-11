@@ -100,6 +100,7 @@ def test_return_fields(cache, vectorizer):
         "response",
         "prompt_vector",
         "vector_distance",
+        "hit_count",
     }
 
     # check all return fields
@@ -111,6 +112,7 @@ def test_return_fields(cache, vectorizer):
         "updated_at",
         "prompt_vector",
         "vector_distance",
+        "hit_count",
     ]
     check_result = cache.check(vector=vector, return_fields=fields[:])
     assert set(check_result[0].keys()) == set(fields)
@@ -394,3 +396,18 @@ def test_multiple_tags(cache):
     # test no results are returned if we pass a nonexistant tag
     results = cache.check("test prompt 1", tags=["bad tag"], num_results=5)
     assert len(results) == 0
+
+
+def test_hit_count(cache):
+    prompt = 'this is a test prompt'
+    response = 'this is a test response'
+    cache.store(prompt=prompt, response=response)
+
+    result = cache.check(prompt)
+    assert result[0]["hit_count"] == '0'
+
+    result = cache.check(prompt)
+    assert result[0]["hit_count"] == '1'
+
+    result = cache.check(prompt)
+    assert result[0]["hit_count"] == '2'
